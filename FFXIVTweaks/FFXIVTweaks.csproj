@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="Dalamud.Plugin.Bootstrap.targets" />
+
+    <PropertyGroup>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Authors>mwyschan</Authors>
+        <PackageProjectUrl>https://github.com/mwyschan/FFXIVTweaks</PackageProjectUrl>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+</Project>

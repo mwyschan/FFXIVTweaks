@@ -1,0 +1,52 @@
+name: Build Release (Ubuntu)
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+
+# https://github.com/softprops/action-gh-release/issues/236#issuecomment-1150530128
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x.x'
+
+      - name: Download Dalamud
+        run: |
+          wget https://goatcorp.github.io/dalamud-distrib/stg/latest.zip
+          unzip latest.zip -d dalamud/
+          echo "DALAMUD_HOME=$PWD/dalamud" >> $GITHUB_ENV
+
+      - name: Restore dependencies (requires Dalamud!)
+        run: dotnet restore -r win
+
+      - name: Build
+        run: |
+          ver=${{ github.ref_name }}
+          dotnet build --no-restore --configuration Release -p:AssemblyVersion=$ver
+
+      # do not overwrite same file
+      # https://stackoverflow.com/questions/23548577/best-way-to-overwrite-file-with-itself
+      - name: Edit FFXIVTweaks.json
+        run: |
+          ver=${{ github.ref_name }}
+          file="./FFXIVTweaks/bin/x64/Release/FFXIVTweaks/FFXIVTweaks.json"
+          tmp="./FFXIVTweaks/bin/x64/Release/FFXIVTweaks/tmp.json"
+          url="https://github.com/mwyschan/FFXIVTweaks/releases/download/${ver}/latest.zip"
+          jq "[.AssemblyVersion=\"$ver\" | .DownloadLinkInstall=\"$url\" | .DownloadLinkUpdate=\"$url\"]" $file > $tmp
+          mv $tmp $file
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./FFXIVTweaks/bin/x64/Release/FFXIVTweaks/*
