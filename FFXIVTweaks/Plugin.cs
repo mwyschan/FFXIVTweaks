@@ -70,7 +70,7 @@ namespace FFXIVTweaks
             this.pluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
             // TODO: think of a good way to gather all tweaks classes
-            tweaksList = [new PartyListOvershield(this)];
+            tweaksList = [new PartyListOvershield(this), new MouseSonar(this)];
         }
 
         public void Dispose()
