@@ -8,24 +8,19 @@ namespace FFXIVTweaks.Windows;
 
 public class ConfigWindow : Window, IDisposable
 {
-    private Plugin plugin;
-
-    public ConfigWindow(Plugin plugin)
-        : base("FFXIVTweaks", ImGuiWindowFlags.AlwaysAutoResize)
-    {
-        this.plugin = plugin;
-    }
+    public ConfigWindow()
+        : base("FFXIVTweaks", ImGuiWindowFlags.AlwaysAutoResize) { }
 
     public void Dispose() { }
 
     public override void Draw()
     {
         ImGui.Text("Hover labels for extra information");
-        var last = plugin.tweaksList.Last();
+        var last = Services.Tweaks.Last();
         if (ImGui.BeginTable("##Table", 2))
         {
             ImGui.TableNextColumn();
-            foreach (ITweaks tweak in plugin.tweaksList)
+            foreach (ITweak tweak in Services.Tweaks)
             {
                 {
                     var enabled = tweak.enabled; // can't ref a property, so use a local copy

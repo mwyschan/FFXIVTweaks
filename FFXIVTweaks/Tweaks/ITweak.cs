@@ -1,6 +1,6 @@
 namespace FFXIVTweaks.Tweaks;
 
-public interface ITweaks
+public interface ITweak
 {
     string description { get; set; }
     bool enabled { get; set; }

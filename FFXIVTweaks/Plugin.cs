@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Dalamud.Game.Command;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -7,94 +8,97 @@ using Dalamud.Plugin.Services;
 using FFXIVTweaks.Tweaks;
 using FFXIVTweaks.Windows;
 
-namespace FFXIVTweaks
+namespace FFXIVTweaks;
+
+public static class Services
 {
-    public sealed class Plugin : IDalamudPlugin
+    public static Configuration PluginConfig;
+    public static ICommandManager CommandManager;
+    public static IPluginLog PluginLog;
+    public static IAddonEventManager AddonEventManager;
+    public static IAddonLifecycle AddonLifecycle;
+    public static IGameGui GameGui;
+    public static IFramework Framework;
+    public static IClientState ClientState;
+    public static UiBuilder UiBuilder;
+    public static List<ITweak> Tweaks;
+}
+
+public sealed class Plugin : IDalamudPlugin
+{
+    // https://github.com/goatcorp/SamplePlugin/pull/33
+    // assembly name, uniquely identifies plugin in plugin installer
+    // as opposed to json manifest name, which is for display only
+    public string Name => "FFXIVTweaks";
+    private const string CommandName = "/ptweaks";
+
+    public DalamudPluginInterface pluginInterface { get; init; }
+    public Configuration configuration { get; init; }
+    public WindowSystem windowSystem = new("FFXIVTweaks");
+    private ConfigWindow configWindow { get; init; }
+
+    public Plugin(
+        [RequiredVersion("9.0")] DalamudPluginInterface pluginInterface,
+        [RequiredVersion("9.0")] ICommandManager commandManager,
+        [RequiredVersion("9.0")] IPluginLog pluginLog,
+        [RequiredVersion("9.0")] IAddonEventManager addonEventManager,
+        [RequiredVersion("9.0")] IAddonLifecycle addonLifecycle,
+        [RequiredVersion("9.0")] IGameGui gameGui,
+        [RequiredVersion("9.0")] IFramework framework,
+        [RequiredVersion("9.0")] IClientState clientState
+    )
     {
-        // https://github.com/goatcorp/SamplePlugin/pull/33
-        // assembly name, uniquely identifies plugin in plugin installer
-        // as opposed to json manifest name, which is for display only
-        public string Name => "FFXIVTweaks";
-        private const string CommandName = "/ptweaks";
+        this.pluginInterface = pluginInterface;
+        Services.CommandManager = commandManager;
+        Services.PluginLog = pluginLog;
+        Services.AddonEventManager = addonEventManager;
+        Services.AddonLifecycle = addonLifecycle;
+        Services.GameGui = gameGui;
+        Services.Framework = framework;
+        Services.ClientState = clientState;
+        Services.UiBuilder = this.pluginInterface.UiBuilder;
 
-        public DalamudPluginInterface pluginInterface { get; init; }
-        public ICommandManager commandManager { get; init; }
-        public IPluginLog pluginLog { get; init; }
-        public IAddonEventManager addonEventManager { get; init; }
-        public IAddonLifecycle addonLifecycle { get; init; }
-        public IGameGui gameGui { get; init; }
-        public IFramework framework { get; init; }
-        public IClientState clientState { get; init; }
+        Services.PluginConfig =
+            this.pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Services.PluginConfig.Initialize(this.pluginInterface);
 
-        public Configuration configuration { get; init; }
-        public WindowSystem windowSystem = new("FFXIVTweaks");
+        configWindow = new ConfigWindow();
+        windowSystem.AddWindow(configWindow);
 
-        private ConfigWindow configWindow { get; init; }
+        Services.CommandManager.AddHandler(
+            CommandName,
+            new CommandInfo(OnCommand) { HelpMessage = "Opens the tweaks menu" }
+        );
 
-        public List<ITweaks> tweaksList;
+        Services.UiBuilder.Draw += DrawUI;
+        Services.UiBuilder.OpenMainUi += DrawConfigUI;
+        Services.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-        public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager,
-            [RequiredVersion("1.0")] IPluginLog pluginLog,
-            [RequiredVersion("1.0")] IAddonEventManager addonEventManager,
-            [RequiredVersion("1.0")] IAddonLifecycle addonLifecycle,
-            [RequiredVersion("1.0")] IGameGui gameGui,
-            [RequiredVersion("1.0")] IFramework framework,
-            [RequiredVersion("1.0")] IClientState clientState
-        )
-        {
-            this.pluginInterface = pluginInterface;
-            this.commandManager = commandManager;
-            this.pluginLog = pluginLog;
-            this.addonEventManager = addonEventManager;
-            this.addonLifecycle = addonLifecycle;
-            this.gameGui = gameGui;
-            this.framework = framework;
-            this.clientState = clientState;
+        // TODO: think of a good way to gather all tweaks classes
+        Services.Tweaks = [new PartyListOvershield(), new MouseSonar()];
+    }
 
-            configuration =
-                this.pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            configuration.Initialize(this.pluginInterface);
+    public void Dispose()
+    {
+        windowSystem.RemoveAllWindows();
+        configWindow.Dispose();
+        Services.CommandManager.RemoveHandler(CommandName);
+        foreach (ITweak tweak in Services.Tweaks)
+            tweak.SetState(false);
+    }
 
-            configWindow = new ConfigWindow(this);
-            windowSystem.AddWindow(configWindow);
+    private void OnCommand(string command, string args)
+    {
+        configWindow.IsOpen = true;
+    }
 
-            this.commandManager.AddHandler(
-                CommandName,
-                new CommandInfo(OnCommand) { HelpMessage = "Opens the tweaks menu" }
-            );
+    private void DrawUI()
+    {
+        windowSystem.Draw();
+    }
 
-            this.pluginInterface.UiBuilder.Draw += DrawUI;
-            this.pluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
-            this.pluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-
-            // TODO: think of a good way to gather all tweaks classes
-            tweaksList = [new PartyListOvershield(this), new MouseSonar(this)];
-        }
-
-        public void Dispose()
-        {
-            windowSystem.RemoveAllWindows();
-            configWindow.Dispose();
-            commandManager.RemoveHandler(CommandName);
-            foreach (ITweaks tweak in tweaksList)
-                tweak.SetState(false);
-        }
-
-        private void OnCommand(string command, string args)
-        {
-            configWindow.IsOpen = true;
-        }
-
-        private void DrawUI()
-        {
-            windowSystem.Draw();
-        }
-
-        public void DrawConfigUI()
-        {
-            configWindow.IsOpen = true;
-        }
+    public void DrawConfigUI()
+    {
+        configWindow.IsOpen = true;
     }
 }

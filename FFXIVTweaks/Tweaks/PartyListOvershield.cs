@@ -24,47 +24,45 @@ subnode 4:  overshieldGaugeFadeOut  (y=-8, AtkNineGridNode)
 subnode 3:  overshieldGaugeFadeIn   (y=-8, AtkNineGridNode)
 subnode 2:  overshieldGaugeExcess   (y= 9, AtkImageNode   )
 */
-public unsafe class PartyListOvershield : ITweaks
+public unsafe class PartyListOvershield : ITweak
 {
     public string description { get; set; } = "Move overshield gauge on HP in party list";
     public bool enabled
     {
-        get => plugin.configuration.PartyListOvershield.enabled;
+        get => Services.PluginConfig.PartyListOvershield.enabled;
         set
         {
-            plugin.configuration.PartyListOvershield.enabled = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.PartyListOvershield.enabled = value;
+            Services.PluginConfig.Save();
             SetState();
         }
     }
-    private Plugin plugin;
     private AtkUnitBase* partyList;
     private List<int> targetGaugeBarIds = [10, 11, 12, 13, 14, 15, 16, 17, 180007];
     private Vector3 colour
     {
-        get => plugin.configuration.PartyListOvershield.colour;
+        get => Services.PluginConfig.PartyListOvershield.colour;
         set
         {
-            plugin.configuration.PartyListOvershield.colour = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.PartyListOvershield.colour = value;
+            Services.PluginConfig.Save();
             SetState();
         }
     }
 
-    public PartyListOvershield(Plugin plugin)
+    public PartyListOvershield()
     {
         // starts on game launch, player list not yet available, listen for setup
         // using draw events to ensure init always triggers (incl. new installs)
-        this.plugin = plugin;
-        plugin.addonLifecycle.RegisterListener(AddonEvent.PreDraw, "_PartyList", GetPartyList);
+        Services.AddonLifecycle.RegisterListener(AddonEvent.PreDraw, "_PartyList", GetPartyList);
     }
 
     public void Reset()
     {
-        plugin.configuration.PartyListOvershield = new PartyListOvershieldConfig();
-        plugin.configuration.Save();
+        Services.PluginConfig.PartyListOvershield = new PartyListOvershieldConfig();
+        Services.PluginConfig.Save();
         SetState(false);
-        plugin.pluginLog.Info($"{GetType().Name}: Reset");
+        Services.PluginLog.Info($"{GetType().Name}: Reset");
     }
 
     public void Update()
@@ -83,7 +81,7 @@ public unsafe class PartyListOvershield : ITweaks
     {
         partyList = (AtkUnitBase*)args.Addon;
         SetState();
-        plugin.addonLifecycle.UnregisterListener(GetPartyList);
+        Services.AddonLifecycle.UnregisterListener(GetPartyList);
     }
 
     public void SetState(bool? state = null)
@@ -133,12 +131,12 @@ public unsafe class PartyListOvershield : ITweaks
                 node->ScreenY = gaugeBarNode->ScreenY + node->Y * *node->Transform.Matrix;
             }
         }
-        plugin.pluginLog.Info($"{GetType().Name}: State Set ({state})");
+        Services.PluginLog.Info($"{GetType().Name}: State Set ({state})");
     }
 
     private void AddressDebug(AtkResNode* node)
     {
         var ptr = new IntPtr(node);
-        plugin.pluginLog.Warning(ptr.ToString("X8"));
+        Services.PluginLog.Warning(ptr.ToString("X8"));
     }
 }

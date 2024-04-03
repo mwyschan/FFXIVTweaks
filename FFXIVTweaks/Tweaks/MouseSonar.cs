@@ -14,20 +14,19 @@ public static class Colour
     public static uint White = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 1, 0.5f));
 }
 
-public unsafe class MouseSonar : ITweaks
+public unsafe class MouseSonar : ITweak
 {
     public string description { get; set; } = "Shake to find mouse cursor";
     public bool enabled
     {
-        get => plugin.configuration.MouseSonar.enabled;
+        get => Services.PluginConfig.MouseSonar.enabled;
         set
         {
-            plugin.configuration.MouseSonar.enabled = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.enabled = value;
+            Services.PluginConfig.Save();
             SetState();
         }
     }
-    private Plugin plugin;
     private Framework* gameFramework;
     private Vector2 p1; // mouse position at frame n-1
     private Vector2 p2; // mouse position at frame n
@@ -63,119 +62,118 @@ public unsafe class MouseSonar : ITweaks
 
     private Vector4 colour
     {
-        get => plugin.configuration.MouseSonar.colour;
+        get => Services.PluginConfig.MouseSonar.colour;
         set
         {
-            plugin.configuration.MouseSonar.colour = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.colour = value;
+            Services.PluginConfig.Save();
         }
     }
     private int size
     {
-        get => plugin.configuration.MouseSonar.size;
+        get => Services.PluginConfig.MouseSonar.size;
         set
         {
-            plugin.configuration.MouseSonar.size = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.size = value;
+            Services.PluginConfig.Save();
         }
     }
     private double dotThreshold
     {
-        get => plugin.configuration.MouseSonar.dotThreshold;
+        get => Services.PluginConfig.MouseSonar.dotThreshold;
         set
         {
-            plugin.configuration.MouseSonar.dotThreshold = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.dotThreshold = value;
+            Services.PluginConfig.Save();
         }
     }
     private int distanceThreshold
     {
-        get => plugin.configuration.MouseSonar.distanceThreshold;
+        get => Services.PluginConfig.MouseSonar.distanceThreshold;
         set
         {
-            plugin.configuration.MouseSonar.distanceThreshold = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.distanceThreshold = value;
+            Services.PluginConfig.Save();
         }
     }
     private double timeDelta
     {
-        get => plugin.configuration.MouseSonar.timeDelta;
+        get => Services.PluginConfig.MouseSonar.timeDelta;
         set
         {
-            plugin.configuration.MouseSonar.timeDelta = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.timeDelta = value;
+            Services.PluginConfig.Save();
         }
     }
     private int count
     {
-        get => plugin.configuration.MouseSonar.count;
+        get => Services.PluginConfig.MouseSonar.count;
         set
         {
-            plugin.configuration.MouseSonar.count = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.count = value;
+            Services.PluginConfig.Save();
         }
     }
     private double decay
     {
-        get => plugin.configuration.MouseSonar.decay;
+        get => Services.PluginConfig.MouseSonar.decay;
         set
         {
-            plugin.configuration.MouseSonar.decay = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.decay = value;
+            Services.PluginConfig.Save();
         }
     }
     private double duration
     {
-        get => plugin.configuration.MouseSonar.duration;
+        get => Services.PluginConfig.MouseSonar.duration;
         set
         {
-            plugin.configuration.MouseSonar.duration = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.duration = value;
+            Services.PluginConfig.Save();
         }
     }
     private double cooldown
     {
-        get => plugin.configuration.MouseSonar.cooldown;
+        get => Services.PluginConfig.MouseSonar.cooldown;
         set
         {
-            plugin.configuration.MouseSonar.cooldown = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.cooldown = value;
+            Services.PluginConfig.Save();
         }
     }
     private bool bgFade
     {
-        get => plugin.configuration.MouseSonar.bgFade;
+        get => Services.PluginConfig.MouseSonar.bgFade;
         set
         {
-            plugin.configuration.MouseSonar.bgFade = value;
-            plugin.configuration.Save();
+            Services.PluginConfig.MouseSonar.bgFade = value;
+            Services.PluginConfig.Save();
         }
     }
     private bool preview = true;
 
-    public MouseSonar(Plugin plugin)
+    public MouseSonar()
     {
-        this.plugin = plugin;
         gameFramework = Framework.Instance();
         SetState();
     }
 
     public void Reset()
     {
-        plugin.configuration.MouseSonar = new MouseSonarConfig();
-        plugin.configuration.Save();
+        Services.PluginConfig.MouseSonar = new MouseSonarConfig();
+        Services.PluginConfig.Save();
         SetState(false);
-        plugin.pluginLog.Info($"{GetType().Name}: Reset");
+        Services.PluginLog.Info($"{GetType().Name}: Reset");
     }
 
     public void SetState(bool? state = null)
     {
         state ??= enabled;
         if ((bool)state)
-            plugin.pluginInterface.UiBuilder.Draw += DrawUI;
+            Services.UiBuilder.Draw += DrawUI;
         else
-            plugin.pluginInterface.UiBuilder.Draw -= DrawUI;
-        plugin.pluginLog.Info($"{GetType().Name}: State Set ({state})");
+            Services.UiBuilder.Draw -= DrawUI;
+        Services.PluginLog.Info($"{GetType().Name}: State Set ({state})");
     }
 
     public void Update()
