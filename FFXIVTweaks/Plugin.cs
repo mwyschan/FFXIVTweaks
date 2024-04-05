@@ -83,7 +83,7 @@ public sealed class Plugin : IDalamudPlugin
         windowSystem.RemoveAllWindows();
         configWindow.Dispose();
         Services.CommandManager.RemoveHandler(CommandName);
-        foreach (ITweak tweak in Services.Tweaks)
+        foreach (var tweak in Services.Tweaks)
             tweak.SetState(false);
     }
 

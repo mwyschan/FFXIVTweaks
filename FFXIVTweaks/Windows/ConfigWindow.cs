@@ -23,9 +23,9 @@ public class ConfigWindow : Window, IDisposable
             foreach (ITweak tweak in Services.Tweaks)
             {
                 {
-                    var enabled = tweak.enabled; // can't ref a property, so use a local copy
+                    var enabled = tweak.config.enabled; // can't ref a property, so use a local copy
                     if (ImGui.Checkbox(tweak.description, ref enabled)) // widget label = widget ID
-                        tweak.enabled = enabled;
+                        tweak.config.enabled = enabled;
 
                     ImGui.TableNextColumn();
                     if (ImGui.Button($"Reset##{tweak.GetType().Name}"))

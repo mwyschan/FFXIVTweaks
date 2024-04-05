@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Numerics;
 using Dalamud.Interface.Utility;
+using FFXIV.Tweaks;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using ImGuiNET;
 
@@ -17,12 +19,36 @@ public static class Colour
 public unsafe class MouseSonar : ITweak
 {
     public string description { get; set; } = "Shake to find mouse cursor";
-    public bool enabled
+
+    public class Config : IConfig, INotifyPropertyChanged
     {
-        get => Services.PluginConfig.MouseSonar.enabled;
+        public bool enabled { get; set; } = false;
+        public Vector4 colour { get; set; } = new(1, 1, 1, 0.5f);
+        public int size { get; set; } = 100;
+        public double dotThreshold { get; set; } = -0.8;
+        public int distanceThreshold { get; set; } = 100;
+        public double timeDelta { get; set; } = 0.05;
+        public int count { get; set; } = 3;
+        public double decay { get; set; } = 0.2;
+        public double duration { get; set; } = 0.75;
+        public double cooldown { get; set; } = 0.5;
+        public bool bgFade { get; set; } = true;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
+    public IConfig config
+    {
+        get => _config;
+        set => _config = (Config)value;
+    }
+
+    private Config _config
+    {
+        get => Services.PluginConfig.MouseSonar;
         set
         {
-            Services.PluginConfig.MouseSonar.enabled = value;
+            Services.PluginConfig.MouseSonar = value;
             Services.PluginConfig.Save();
             SetState();
         }
@@ -59,108 +85,32 @@ public unsafe class MouseSonar : ITweak
             return t >= TimeSpan.Zero ? t.TotalSeconds : 0;
         }
     }
-
-    private Vector4 colour
-    {
-        get => Services.PluginConfig.MouseSonar.colour;
-        set
-        {
-            Services.PluginConfig.MouseSonar.colour = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private int size
-    {
-        get => Services.PluginConfig.MouseSonar.size;
-        set
-        {
-            Services.PluginConfig.MouseSonar.size = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private double dotThreshold
-    {
-        get => Services.PluginConfig.MouseSonar.dotThreshold;
-        set
-        {
-            Services.PluginConfig.MouseSonar.dotThreshold = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private int distanceThreshold
-    {
-        get => Services.PluginConfig.MouseSonar.distanceThreshold;
-        set
-        {
-            Services.PluginConfig.MouseSonar.distanceThreshold = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private double timeDelta
-    {
-        get => Services.PluginConfig.MouseSonar.timeDelta;
-        set
-        {
-            Services.PluginConfig.MouseSonar.timeDelta = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private int count
-    {
-        get => Services.PluginConfig.MouseSonar.count;
-        set
-        {
-            Services.PluginConfig.MouseSonar.count = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private double decay
-    {
-        get => Services.PluginConfig.MouseSonar.decay;
-        set
-        {
-            Services.PluginConfig.MouseSonar.decay = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private double duration
-    {
-        get => Services.PluginConfig.MouseSonar.duration;
-        set
-        {
-            Services.PluginConfig.MouseSonar.duration = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private double cooldown
-    {
-        get => Services.PluginConfig.MouseSonar.cooldown;
-        set
-        {
-            Services.PluginConfig.MouseSonar.cooldown = value;
-            Services.PluginConfig.Save();
-        }
-    }
-    private bool bgFade
-    {
-        get => Services.PluginConfig.MouseSonar.bgFade;
-        set
-        {
-            Services.PluginConfig.MouseSonar.bgFade = value;
-            Services.PluginConfig.Save();
-        }
-    }
     private bool preview = true;
 
     public MouseSonar()
     {
         gameFramework = Framework.Instance();
+        _config.PropertyChanged += new PropertyChangedEventHandler(
+            (_, _) =>
+            {
+                Services.PluginConfig.Save();
+                SetState();
+            }
+        );
         SetState();
     }
 
     public void Reset()
     {
-        Services.PluginConfig.MouseSonar = new MouseSonarConfig();
+        var cfg = new Config();
+        cfg.PropertyChanged += new PropertyChangedEventHandler(
+            (_, _) =>
+            {
+                Services.PluginConfig.Save();
+                SetState();
+            }
+        );
+        Services.PluginConfig.MouseSonar = cfg;
         Services.PluginConfig.Save();
         SetState(false);
         Services.PluginLog.Info($"{GetType().Name}: Reset");
@@ -168,9 +118,12 @@ public unsafe class MouseSonar : ITweak
 
     public void SetState(bool? state = null)
     {
-        state ??= enabled;
+        state ??= _config.enabled;
         if ((bool)state)
+        {
+            Services.UiBuilder.Draw -= DrawUI;
             Services.UiBuilder.Draw += DrawUI;
+        }
         else
             Services.UiBuilder.Draw -= DrawUI;
         Services.PluginLog.Info($"{GetType().Name}: State Set ({state})");
@@ -180,16 +133,16 @@ public unsafe class MouseSonar : ITweak
     {
         // TODO: check back when internals are available to implement row-wide hover
         // https://github.com/ImGuiNET/ImGui.NET/pull/364
-        var _colour = colour;
-        var _size = size;
-        var _dotThreshold = (float)dotThreshold;
-        var _distanceThreshold = distanceThreshold;
-        var _timeDelta = (float)timeDelta;
-        var _count = count;
-        var _decay = (float)decay;
-        var _duration = (float)duration;
-        var _cooldown = (float)cooldown;
-        var _bgFade = bgFade;
+        var _colour = _config.colour;
+        var _size = _config.size;
+        var _dotThreshold = (float)_config.dotThreshold;
+        var _distanceThreshold = _config.distanceThreshold;
+        var _timeDelta = (float)_config.timeDelta;
+        var _count = _config.count;
+        var _decay = (float)_config.decay;
+        var _duration = (float)_config.duration;
+        var _cooldown = (float)_config.cooldown;
+        var _bgFade = _config.bgFade;
         var wDrawList = ImGui.GetWindowDrawList();
         var fgDrawList = ImGui.GetForegroundDrawList();
 
@@ -212,7 +165,7 @@ public unsafe class MouseSonar : ITweak
         text = "Colour";
         ImGui.SetNextItemWidth(-1);
         if (ImGui.ColorEdit4($"##{GetType().Name}", ref _colour))
-            colour = _colour;
+            _config.colour = _colour;
         ImGui.TableNextColumn();
         ImGui.Text(text);
         ImGui.TableNextColumn();
@@ -220,7 +173,7 @@ public unsafe class MouseSonar : ITweak
         text = "Size";
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderInt($"##{text} {GetType().Name}", ref _size, 0, 200))
-            size = _size;
+            _config.size = _size;
         ImGui.TableNextColumn();
         ImGui.Text(text);
         ImGui.TableNextColumn();
@@ -237,7 +190,7 @@ public unsafe class MouseSonar : ITweak
                 ImGuiSliderFlags.AlwaysClamp
             )
         )
-            dotThreshold = _dotThreshold;
+            _config.dotThreshold = _dotThreshold;
         ImGui.TableNextColumn();
         ImGui.Text(text);
         if (ImGui.IsItemHovered())
@@ -250,7 +203,7 @@ public unsafe class MouseSonar : ITweak
         text = "Distance Threshold";
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderInt($"##{text} {GetType().Name}", ref _distanceThreshold, 0, 200))
-            distanceThreshold = _distanceThreshold;
+            _config.distanceThreshold = _distanceThreshold;
         ImGui.TableNextColumn();
         ImGui.Text(text);
         if (ImGui.IsItemHovered())
@@ -263,7 +216,7 @@ public unsafe class MouseSonar : ITweak
         text = "Time Delta (s)";
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderFloat($"##{text} {GetType().Name}", ref _timeDelta, 0, 0.25f))
-            timeDelta = _timeDelta;
+            _config.timeDelta = _timeDelta;
         ImGui.TableNextColumn();
         ImGui.Text(text);
         if (ImGui.IsItemHovered())
@@ -274,12 +227,12 @@ public unsafe class MouseSonar : ITweak
         var beforePos = ImGui.GetCursorScreenPos();
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderInt($"##{text} {GetType().Name}", ref _count, 0, 10))
-            count = _count;
+            _config.count = _count;
         var afterPos = ImGui.GetCursorScreenPos();
         // SameLine doesn't work here, adjust for automatically added padding
         afterPos.Y = beforePos.Y + ImGui.GetTextLineHeight();
         var sliderSize = ImGui.GetItemRectSize();
-        var scaleX = count > 0 ? (double)(sonarCount) / count : sonarCount;
+        var scaleX = _config.count > 0 ? (double)(sonarCount) / _config.count : sonarCount;
         sliderSize.X *= (float)scaleX;
         ImGui.SetCursorScreenPos(beforePos);
         wDrawList.AddRectFilled(beforePos, beforePos + sliderSize, Colour.White);
@@ -294,11 +247,11 @@ public unsafe class MouseSonar : ITweak
         beforePos = ImGui.GetCursorScreenPos();
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderFloat($"##{text} {GetType().Name}", ref _decay, 0, 2))
-            decay = _decay;
+            _config.decay = _decay;
         afterPos = ImGui.GetCursorScreenPos();
         afterPos.Y = beforePos.Y + ImGui.GetTextLineHeight();
         sliderSize = ImGui.GetItemRectSize();
-        scaleX = decay > 0 ? decayTime / decay : 0;
+        scaleX = _config.decay > 0 ? decayTime / _config.decay : 0;
         sliderSize.X *= (float)scaleX;
         ImGui.SetCursorScreenPos(beforePos);
         wDrawList.AddRectFilled(beforePos, beforePos + sliderSize, Colour.White);
@@ -313,11 +266,11 @@ public unsafe class MouseSonar : ITweak
         beforePos = ImGui.GetCursorScreenPos();
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderFloat($"##{text} {GetType().Name}", ref _duration, 0, 2))
-            duration = _duration;
+            _config.duration = _duration;
         afterPos = ImGui.GetCursorScreenPos();
         afterPos.Y = beforePos.Y + ImGui.GetTextLineHeight();
         sliderSize = ImGui.GetItemRectSize();
-        scaleX = duration > 0 ? durationTime / duration : 0;
+        scaleX = _config.duration > 0 ? durationTime / _config.duration : 0;
         sliderSize.X *= (float)scaleX;
         ImGui.SetCursorScreenPos(beforePos);
         wDrawList.AddRectFilled(beforePos, beforePos + sliderSize, Colour.White);
@@ -332,11 +285,14 @@ public unsafe class MouseSonar : ITweak
         beforePos = ImGui.GetCursorScreenPos();
         ImGui.SetNextItemWidth(-1);
         if (ImGui.SliderFloat($"##{text} {GetType().Name}", ref _cooldown, 0, 2))
-            cooldown = _cooldown;
+            _config.cooldown = _cooldown;
         afterPos = ImGui.GetCursorScreenPos();
         afterPos.Y = beforePos.Y + ImGui.GetTextLineHeight();
         sliderSize = ImGui.GetItemRectSize();
-        scaleX = (cooldown + duration) > 0 ? cooldownTime / (cooldown + duration) : 0;
+        scaleX =
+            (_config.cooldown + _config.duration) > 0
+                ? cooldownTime / (_config.cooldown + _config.duration)
+                : 0;
         sliderSize.X *= (float)scaleX;
         ImGui.SetCursorScreenPos(beforePos);
         wDrawList.AddRectFilled(beforePos, beforePos + sliderSize, Colour.White);
@@ -350,7 +306,7 @@ public unsafe class MouseSonar : ITweak
         ImGui.TableNextColumn();
 
         if (ImGui.Checkbox($"Background Fade##{GetType().Name}", ref _bgFade))
-            bgFade = _bgFade;
+            _config.bgFade = _bgFade;
         ImGui.TableNextColumn();
         ImGui.TableNextColumn();
 
@@ -360,11 +316,15 @@ public unsafe class MouseSonar : ITweak
 
         if (preview)
         {
-            fgDrawList.AddCircleFilled(p2, size, ImGui.ColorConvertFloat4ToU32(colour));
-            fgDrawList.AddCircle(p2, distanceThreshold, Colour.Yellow, 0, 3);
+            fgDrawList.AddCircleFilled(
+                p2,
+                _config.size,
+                ImGui.ColorConvertFloat4ToU32(_config.colour)
+            );
+            fgDrawList.AddCircle(p2, _config.distanceThreshold, Colour.Yellow, 0, 3);
 
             // dot sector
-            var validSector = Math.PI - Math.Acos(dotThreshold);
+            var validSector = Math.PI - Math.Acos(_config.dotThreshold);
             var startRad = -validSector;
             var endRad = validSector;
             for (var i = 0; i <= 12; ++i)
@@ -372,8 +332,8 @@ public unsafe class MouseSonar : ITweak
                 var angle = startRad + i / 12f * (endRad - startRad);
                 fgDrawList.PathLineTo(
                     new Vector2(
-                        (float)(p2.X + Math.Cos(angle) * distanceThreshold),
-                        (float)(p2.Y + Math.Sin(angle) * distanceThreshold)
+                        (float)(p2.X + Math.Cos(angle) * _config.distanceThreshold),
+                        (float)(p2.Y + Math.Sin(angle) * _config.distanceThreshold)
                     )
                 );
             }
@@ -383,50 +343,13 @@ public unsafe class MouseSonar : ITweak
         }
     }
 
-    private double EaseInOut(double x, double a = 0.25)
-    {
-        //   a=turning point
-        //          v   v
-        // y=1       ___
-        //          /   \
-        //          |   |
-        // y=0 x=1 _/   \_ x=0
-        if (x >= 1 - a)
-            x = (1 - x) / a;
-        else if (x <= a)
-            x /= a;
-        else
-            x = 1;
-        // parametric function
-        // https://stackoverflow.com/questions/13462001/ease-in-and-ease-out-animation-formula
-        var sqr = x * x;
-        return sqr / (2 * (sqr - x) + 1);
-    }
-
-    private double Linear(double x, double a = 0.25, double initScale = 2)
-    {
-        //             a=turning point
-        //                    v   v
-        // y=initScale   x=1 \
-        // y=1                \___
-        //                        \
-        // y=0                     \ x=0
-        if (x >= 1 - a)
-            x = (x - 1 + a) / a * (initScale - 1) + 1;
-        else if (x <= a)
-            x /= a;
-        else
-            x = 1;
-        return x;
-    }
-
     private void DrawUI()
     {
         // note: framerate is higher when game window is out of focus
         p2 = ImGui.GetMousePos();
         var v1 = p2 - p1;
         var dot = 0f;
-        var frameNum = ImGui.GetIO().Framerate * timeDelta;
+        var frameNum = ImGui.GetIO().Framerate * _config.timeDelta;
 
         mouseLog.Enqueue(new Tuple<Vector2, Vector2>(p2, v1));
         while (mouseLog.Count > Math.Max(frameNum, 2))
@@ -443,16 +366,20 @@ public unsafe class MouseSonar : ITweak
             dot = v1norm.X * v0norm.X + v1norm.Y * v0norm.Y;
             var distance = (p2 - p0.Item1).Length();
 
-            if (dot <= dotThreshold && distance > distanceThreshold && cooldownTime == 0)
+            if (
+                dot <= _config.dotThreshold
+                && distance > _config.distanceThreshold
+                && cooldownTime == 0
+            )
             {
                 mouseLog.Clear();
-                if (sonarCount < count)
+                if (sonarCount < _config.count)
                     sonarCount += 1;
-                decayEnd = DateTime.UtcNow.AddSeconds(decay);
-                if (sonarCount == count)
+                decayEnd = DateTime.UtcNow.AddSeconds(_config.decay);
+                if (sonarCount == _config.count)
                 {
-                    durationEnd = DateTime.UtcNow.AddSeconds(duration);
-                    cooldownEnd = DateTime.UtcNow.AddSeconds(cooldown + duration);
+                    durationEnd = DateTime.UtcNow.AddSeconds(_config.duration);
+                    cooldownEnd = DateTime.UtcNow.AddSeconds(_config.cooldown + _config.duration);
                 }
             }
         }
@@ -464,10 +391,10 @@ public unsafe class MouseSonar : ITweak
         ImGuiHelpers.ForceNextWindowMainViewport();
         ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(0, 0));
         ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize); // game window size
-        var t = durationTime / duration;
-        var bgA = bgFade ? EaseInOut(t) * 0.5 : 0;
-        var _colour = colour;
-        _colour.W *= (float)EaseInOut(t);
+        var t = durationTime / _config.duration;
+        var bgA = _config.bgFade ? Util.EaseInOut(t) * 0.5 : 0;
+        var _colour = _config.colour;
+        _colour.W *= (float)Util.EaseInOut(t);
         ImGui.PushStyleColor(
             ImGuiCol.WindowBg,
             ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, (float)bgA))
@@ -485,7 +412,7 @@ public unsafe class MouseSonar : ITweak
                 .GetWindowDrawList()
                 .AddCircleFilled(
                     p2,
-                    (float)(Linear(t) * size),
+                    (float)(Util.Linear(t) * _config.size),
                     ImGui.ColorConvertFloat4ToU32(_colour)
                 );
         }
