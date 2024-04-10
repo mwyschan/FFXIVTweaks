@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Numerics;
@@ -60,9 +59,24 @@ public unsafe class PartyListOvershield : ITweak
 
     public PartyListOvershield()
     {
-        // starts on game launch, player list not yet available, listen for setup
-        // using draw events to ensure init always triggers (incl. new installs)
-        Services.AddonLifecycle.RegisterListener(AddonEvent.PreDraw, "_PartyList", GetPartyList);
+        // listen for logins
+        Services.ClientState.Login += () =>
+        {
+            Services.AddonLifecycle.RegisterListener(
+                AddonEvent.PreDraw,
+                "_PartyList",
+                GetPartyList
+            );
+        };
+
+        // if starting from already logged in state, register
+        if (Services.ClientState.IsLoggedIn)
+            Services.AddonLifecycle.RegisterListener(
+                AddonEvent.PreDraw,
+                "_PartyList",
+                GetPartyList
+            );
+
         _config.PropertyChanged += new PropertyChangedEventHandler(
             (_, _) =>
             {
