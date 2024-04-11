@@ -101,7 +101,7 @@ public class Gotify : ITweak
             _url = "";
         else
             _url = _config.url!.ToString();
-        var text = "URI";
+        var text = "URL";
         ImGui.SetNextItemWidth(-1);
         if (
             ImGui.InputText($"##{text} {GetType().Name}", ref _url, 200) // memory of string is only held until textbox is unfocused
@@ -132,14 +132,15 @@ public class Gotify : ITweak
         notification.Visible = true;
         notification.ShowBalloonTip(7500, title, message, ToolTipIcon.Info);
 
-        await client.PostAsJsonAsync(
-            _config.url,
-            new
-            {
-                title,
-                message,
-                priority = 1000
-            }
-        );
+        if (_config.url != null)
+            await client.PostAsJsonAsync(
+                _config.url,
+                new
+                {
+                    title,
+                    message,
+                    priority = 1000
+                }
+            );
     }
 }
