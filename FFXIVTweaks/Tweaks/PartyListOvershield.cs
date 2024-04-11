@@ -54,6 +54,8 @@ public unsafe class PartyListOvershield : ITweak
         }
     }
 
+    // ---
+
     private AtkUnitBase* partyList;
     private List<int> targetGaugeBarIds = [10, 11, 12, 13, 14, 15, 16, 17, 180007];
 
@@ -155,12 +157,12 @@ public unsafe class PartyListOvershield : ITweak
     public void Update()
     {
         var _colour = _config.colour;
-        var currentText = "Colour";
+        var text = "Colour";
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.ColorEdit3($"##{currentText} {GetType().Name}", ref _colour))
+        if (ImGui.ColorEdit3($"##{text} {GetType().Name}", ref _colour))
             _config.colour = _colour;
         ImGui.TableNextColumn();
-        ImGui.Text(currentText);
+        ImGui.Text(text);
         ImGui.TableNextColumn();
     }
 

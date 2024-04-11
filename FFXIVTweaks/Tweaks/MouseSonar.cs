@@ -9,13 +9,6 @@ using ImGuiNET;
 
 namespace FFXIVTweaks.Tweaks;
 
-public static class Colour
-{
-    public static uint Yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 0, 1f));
-    public static uint Red = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 1f));
-    public static uint White = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 1, 0.5f));
-}
-
 public unsafe class MouseSonar : ITweak
 {
     public string description { get; set; } = "Shake to find mouse cursor";
@@ -53,6 +46,16 @@ public unsafe class MouseSonar : ITweak
             SetState();
         }
     }
+
+    private class Colour
+    {
+        public static uint Yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 0, 1f));
+        public static uint Red = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 1f));
+        public static uint White = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 1, 0.5f));
+    }
+
+    // ---
+
     private Framework* gameFramework;
     private Vector2 p1; // mouse position at frame n-1
     private Vector2 p2; // mouse position at frame n
@@ -164,7 +167,7 @@ public unsafe class MouseSonar : ITweak
 
         text = "Colour";
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.ColorEdit4($"##{GetType().Name}", ref _colour))
+        if (ImGui.ColorEdit4($"##{text} {GetType().Name}", ref _colour))
             _config.colour = _colour;
         ImGui.TableNextColumn();
         ImGui.Text(text);

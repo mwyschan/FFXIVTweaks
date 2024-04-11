@@ -12,6 +12,7 @@ namespace FFXIVTweaks;
 
 public static class Services
 {
+    public static DalamudPluginInterface PluginInterface;
     public static Configuration PluginConfig;
     public static ICommandManager CommandManager;
     public static IPluginLog PluginLog;
@@ -48,7 +49,7 @@ public sealed class Plugin : IDalamudPlugin
         [RequiredVersion("9.0")] IClientState clientState
     )
     {
-        this.pluginInterface = pluginInterface;
+        Services.PluginInterface = pluginInterface;
         Services.CommandManager = commandManager;
         Services.PluginLog = pluginLog;
         Services.AddonEventManager = addonEventManager;
@@ -56,11 +57,11 @@ public sealed class Plugin : IDalamudPlugin
         Services.GameGui = gameGui;
         Services.Framework = framework;
         Services.ClientState = clientState;
-        Services.UiBuilder = this.pluginInterface.UiBuilder;
+        Services.UiBuilder = pluginInterface.UiBuilder;
 
         Services.PluginConfig =
-            this.pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        Services.PluginConfig.Initialize(this.pluginInterface);
+            pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Services.PluginConfig.Initialize(pluginInterface);
 
         configWindow = new ConfigWindow();
         windowSystem.AddWindow(configWindow);
