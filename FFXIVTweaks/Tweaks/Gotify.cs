@@ -1,8 +1,11 @@
 using System;
 using System.ComponentModel;
+using System.Drawing;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Numerics;
+using System.Windows.Forms;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 
@@ -118,14 +121,23 @@ public class Gotify : ITweak
 
     private async void Register(ContentFinderCondition condition)
     {
-        // send http request
-        // flurl? https://flurl.dev/
+        // https://flurl.dev/
+        using var notification = new NotifyIcon();
+        var title = "Duty Pop";
+        var message = $"{condition.Name}";
+        notification.Icon = Icon.ExtractAssociatedIcon(
+            Path.Combine(Services.DataManager.GameData.DataPath.Parent!.FullName, "ffxiv_dx11.exe")
+        );
+        notification.Text = title;
+        notification.Visible = true;
+        notification.ShowBalloonTip(7500, title, message, ToolTipIcon.Info);
+
         await client.PostAsJsonAsync(
             _config.url,
             new
             {
-                title = "Duty Pop",
-                message = $"{condition.Name}",
+                title,
+                message,
                 priority = 1000
             }
         );

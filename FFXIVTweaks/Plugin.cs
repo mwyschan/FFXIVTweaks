@@ -21,6 +21,7 @@ public static class Services
     public static IGameGui GameGui;
     public static IFramework Framework;
     public static IClientState ClientState;
+    public static IDataManager DataManager;
     public static UiBuilder UiBuilder;
     public static List<ITweak> Tweaks;
 }
@@ -46,7 +47,8 @@ public sealed class Plugin : IDalamudPlugin
         [RequiredVersion("9.0")] IAddonLifecycle addonLifecycle,
         [RequiredVersion("9.0")] IGameGui gameGui,
         [RequiredVersion("9.0")] IFramework framework,
-        [RequiredVersion("9.0")] IClientState clientState
+        [RequiredVersion("9.0")] IClientState clientState,
+        [RequiredVersion("9.0")] IDataManager dataManager
     )
     {
         Services.PluginInterface = pluginInterface;
@@ -57,6 +59,7 @@ public sealed class Plugin : IDalamudPlugin
         Services.GameGui = gameGui;
         Services.Framework = framework;
         Services.ClientState = clientState;
+        Services.DataManager = dataManager;
         Services.UiBuilder = pluginInterface.UiBuilder;
 
         Services.PluginConfig =
