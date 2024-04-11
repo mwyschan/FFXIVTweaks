@@ -76,7 +76,12 @@ public sealed class Plugin : IDalamudPlugin
         Services.UiBuilder.OpenConfigUi += DrawConfigUI;
 
         // TODO: think of a good way to gather all tweaks classes
-        Services.Tweaks = [new PartyListOvershield(), new MouseSonar()];
+        Services.Tweaks =
+        [
+            new PartyListOvershield(),
+            new MouseSonar(),
+            new Gotify()
+        ];
     }
 
     public void Dispose()

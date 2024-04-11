@@ -12,6 +12,7 @@ public class Configuration : IPluginConfiguration
 
     public PartyListOvershield.Config PartyListOvershield { get; set; } = new();
     public MouseSonar.Config MouseSonar { get; set; } = new();
+    public Gotify.Config Gotify { get; set; } = new();
 
     // the below exist just to make saving less cumbersome
     [NonSerialized]
