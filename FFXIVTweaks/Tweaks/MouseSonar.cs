@@ -343,6 +343,8 @@ public unsafe class MouseSonar : ITweak
         }
     }
 
+    public void Dispose() { }
+
     private void DrawUI()
     {
         // note: framerate is higher when game window is out of focus

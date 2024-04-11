@@ -84,7 +84,10 @@ public sealed class Plugin : IDalamudPlugin
         configWindow.Dispose();
         Services.CommandManager.RemoveHandler(CommandName);
         foreach (var tweak in Services.Tweaks)
+        {
             tweak.SetState(false);
+            tweak.Dispose();
+        }
     }
 
     private void OnCommand(string command, string args)

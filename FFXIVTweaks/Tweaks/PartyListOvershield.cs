@@ -164,6 +164,8 @@ public unsafe class PartyListOvershield : ITweak
         ImGui.TableNextColumn();
     }
 
+    public void Dispose() { }
+
     private void GetPartyList(AddonEvent type, AddonArgs args)
     {
         partyList = (AtkUnitBase*)args.Addon;

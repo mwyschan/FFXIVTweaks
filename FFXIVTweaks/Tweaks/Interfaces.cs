@@ -1,6 +1,8 @@
+using System;
+
 namespace FFXIVTweaks.Tweaks;
 
-public interface ITweak
+public interface ITweak : IDisposable
 {
     string description { get; set; }
     IConfig config { get; set; }
