@@ -121,26 +121,39 @@ public class Gotify : ITweak
 
     private async void Register(ContentFinderCondition condition)
     {
-        // https://flurl.dev/
-        using var notification = new NotifyIcon();
-        var title = "Duty Pop";
-        var message = $"{condition.Name}";
-        notification.Icon = Icon.ExtractAssociatedIcon(
-            Path.Combine(Services.DataManager.GameData.DataPath.Parent!.FullName, "ffxiv_dx11.exe")
-        );
-        notification.Text = title;
-        notification.Visible = true;
-        notification.ShowBalloonTip(7500, title, message, ToolTipIcon.Info);
+        try
+        {
+            // https://flurl.dev/
+            using var notification = new NotifyIcon();
+            var title = "Duty Pop";
+            var message = $"{condition.Name}";
+            if (message == "")
+                message = "Duty Roulette";
 
-        if (_config.url != null)
-            await client.PostAsJsonAsync(
-                _config.url,
-                new
-                {
-                    title,
-                    message,
-                    priority = 1000
-                }
+            notification.Icon = Icon.ExtractAssociatedIcon(
+                Path.Combine(
+                    Services.DataManager.GameData.DataPath.Parent!.FullName,
+                    "ffxiv_dx11.exe"
+                )
             );
+            notification.Text = title;
+            notification.Visible = true;
+            notification.ShowBalloonTip(7500, title, message, ToolTipIcon.Info);
+
+            if (_config.url != null)
+                await client.PostAsJsonAsync(
+                    _config.url,
+                    new
+                    {
+                        title,
+                        message,
+                        priority = 1000
+                    }
+                );
+        }
+        catch (Exception e) // don't kill the game when lumina does the funny
+        {
+            Services.PluginLog.Warning(e.ToString());
+        }
     }
 }
